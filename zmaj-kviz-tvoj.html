@@ -1,0 +1,779 @@
+<html lang="sr"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kviz: Djulici i Djulici uveoci</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #fdf6ee;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #3a1f1f;
+    min-height: 100vh;
+  }
+
+  /* ===== TOP NAV ===== */
+  .top-nav {
+    background: #8b2d42;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .top-nav h2 {
+    color: white;
+    font-size: 1rem;
+    font-weight: normal;
+    font-style: italic;
+    letter-spacing: 0.5px;
+  }
+  .nav-btns { display: flex; gap: 10px; }
+  .nav-btn {
+    padding: 7px 18px;
+    border-radius: 50px;
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.5);
+    transition: all 0.2s;
+  }
+  .nav-btn.active {
+    background: white;
+    color: #8b2d42;
+    border-color: white;
+    font-weight: bold;
+  }
+  .nav-btn:not(.active) {
+    background: transparent;
+    color: white;
+  }
+  .nav-btn:not(.active):hover {
+    background: rgba(255,255,255,0.15);
+  }
+
+  /* ===== WRAPPER ===== */
+  .wrapper {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+  }
+
+  /* ===== VIEWS ===== */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ===== QUIZ VIEW ===== */
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .rose-divider { font-size: 1.3rem; color: #c0566a; letter-spacing: 8px; margin-bottom: 10px; }
+  h1 { font-size: 1.9rem; color: #8b2d42; margin-bottom: 6px; }
+  .subtitle { font-style: italic; color: #a07070; font-size: 0.92rem; }
+
+  .progress-label { text-align: right; font-size: 0.78rem; color: #a07070; margin-bottom: 5px; font-style: italic; }
+  .progress-bar-wrap { background: rgba(192,86,106,0.12); border-radius: 50px; height: 6px; margin-bottom: 28px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #8b2d42, #c9a84c); border-radius: 50px; transition: width 0.5s ease; width: 0%; }
+
+  .card {
+    background: rgba(255,255,255,0.88);
+    border: 1px solid rgba(192,86,106,0.18);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 30px rgba(139,45,66,0.07);
+  }
+
+  .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .q-number { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #c0566a; }
+  .category-tag { font-size: 0.72rem; background: rgba(192,86,106,0.1); color: #8b2d42; padding: 4px 10px; border-radius: 50px; font-style: italic; }
+  .question-text { font-size: 1.15rem; line-height: 1.55; color: #6b3d2e; margin-bottom: 24px; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+    border: 1.5px solid rgba(192,86,106,0.2);
+    border-radius: 10px;
+    background: rgba(253,246,238,0.8);
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 0.93rem;
+    color: #3a1f1f;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    width: 100%;
+  }
+  .option-btn:hover:not(:disabled) { border-color: #e8a0ae; background: rgba(232,160,174,0.1); transform: translateX(3px); }
+  .option-letter { width: 28px; height: 28px; border-radius: 50%; background: rgba(192,86,106,0.12); color: #8b2d42; font-weight: bold; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .option-btn.correct { background: rgba(80,160,100,0.12); border-color: #5a9e6a; }
+  .option-btn.correct .option-letter { background: #5a9e6a; color: white; }
+  .option-btn.wrong { background: rgba(192,86,106,0.12); border-color: #c0566a; }
+  .option-btn.wrong .option-letter { background: #c0566a; color: white; }
+  .option-btn:disabled { cursor: default; }
+
+  .feedback { margin-top: 16px; padding: 13px 15px; border-radius: 8px; font-style: italic; font-size: 0.87rem; line-height: 1.5; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct-fb { background: rgba(80,160,100,0.1); border-left: 3px solid #5a9e6a; color: #2d6b3e; }
+  .feedback.wrong-fb { background: rgba(192,86,106,0.1); border-left: 3px solid #c0566a; color: #8b2d42; }
+
+  .next-btn { display: none; margin: 20px auto 0; padding: 12px 34px; background: linear-gradient(135deg, #8b2d42, #c0566a); color: white; border: none; border-radius: 50px; font-family: Georgia, serif; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 18px rgba(139,45,66,0.22); transition: transform 0.2s; }
+  .next-btn.show { display: block; }
+  .next-btn:hover { transform: translateY(-2px); }
+
+  /* Results */
+  #results { display: none; text-align: center; }
+  #results.show { display: block; }
+  .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #e8a0ae; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 20px; background: white; box-shadow: 0 4px 24px rgba(192,86,106,0.12); }
+  .score-num { font-size: 2.3rem; color: #8b2d42; line-height: 1; }
+  .score-total { font-size: 0.78rem; color: #a07070; font-style: italic; }
+  .result-title { font-size: 1.4rem; color: #8b2d42; margin-bottom: 8px; }
+  .poem-quote { font-style: italic; color: #a07070; font-size: 0.86rem; border-left: 2px solid #e8a0ae; padding-left: 13px; margin: 16px 0 12px; text-align: left; line-height: 1.7; }
+  .result-msg { color: #6b3d2e; font-size: 0.93rem; margin-bottom: 24px; line-height: 1.6; }
+  .restart-btn { padding: 12px 32px; background: transparent; color: #8b2d42; border: 2px solid #c0566a; border-radius: 50px; font-family: Georgia, serif; font-size: 0.95rem; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .restart-btn:hover { background: #c0566a; color: white; }
+
+  .grade-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
+  .grade-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 90px; height: 90px; border-radius: 50%; box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
+  .grade-box.g5 { background: #5a9e6a; border: 3px solid #3d7a50; }
+  .grade-box.g4 { background: #7ab55c; border: 3px solid #5a8f3e; }
+  .grade-box.g3 { background: #c9a84c; border: 3px solid #a07a20; }
+  .grade-box.g2 { background: #d4804a; border: 3px solid #a85a28; }
+  .grade-box.g1 { background: #c0566a; border: 3px solid #8b2d42; }
+  .grade-num { font-size: 2.4rem; color: white; line-height: 1; font-weight: bold; font-family: Georgia, serif; }
+  .grade-label { font-size: 0.65rem; color: rgba(255,255,255,0.85); text-transform: uppercase; letter-spacing: 1px; }
+  .grade-scale { display: flex; gap: 8px; justify-content: center; margin: 4px 0 18px; }
+  .grade-scale-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.68rem; color: #a07070; font-style: italic; }
+  .grade-scale-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.88rem; color: white; opacity: 0.3; transition: opacity 0.3s, transform 0.3s; }
+  .grade-scale-dot.active { opacity: 1; transform: scale(1.18); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .gs5 { background: #5a9e6a; } .gs4 { background: #7ab55c; } .gs3 { background: #c9a84c; } .gs2 { background: #d4804a; } .gs1 { background: #c0566a; }
+
+  .download-btn { padding: 10px 24px; background: #8b2d42; color: white; border: none; border-radius: 8px; font-family: Georgia, serif; font-size: 0.88rem; cursor: pointer; transition: background 0.2s; }
+  .download-btn:hover { background: #6a1f30; }
+
+  .grade-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
+  .grade-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 90px; height: 90px; border-radius: 50%; box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
+  .grade-box.g5 { background: #5a9e6a; border: 3px solid #3d7a50; }
+  .grade-box.g4 { background: #7ab55c; border: 3px solid #5a8f3e; }
+  .grade-box.g3 { background: #c9a84c; border: 3px solid #a07a20; }
+  .grade-box.g2 { background: #d4804a; border: 3px solid #a85a28; }
+  .grade-box.g1 { background: #c0566a; border: 3px solid #8b2d42; }
+  .grade-num { font-size: 2.4rem; color: white; line-height: 1; font-weight: bold; font-family: Georgia, serif; }
+  .grade-label { font-size: 0.65rem; color: rgba(255,255,255,0.85); text-transform: uppercase; letter-spacing: 1px; }
+  .grade-scale { display: flex; gap: 8px; justify-content: center; margin: 4px 0 18px; }
+  .grade-scale-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.68rem; color: #a07070; font-style: italic; }
+  .grade-scale-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.88rem; color: white; opacity: 0.3; transition: opacity 0.3s, transform 0.3s; }
+  .grade-scale-dot.active { opacity: 1; transform: scale(1.18); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .gs5 { background: #5a9e6a; } .gs4 { background: #7ab55c; } .gs3 { background: #c9a84c; } .gs2 { background: #d4804a; } .gs1 { background: #c0566a; }
+
+  .download-btn { padding: 10px 24px; background: #8b2d42; color: white; border: none; border-radius: 8px; font-family: Georgia, serif; font-size: 0.88rem; cursor: pointer; transition: background 0.2s; }
+  .download-btn:hover { background: #6a1f30; }
+
+  /* ===== EDITOR VIEW ===== */
+  .editor-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .editor-header h2 { font-size: 1.5rem; color: #8b2d42; margin-bottom: 4px; }
+  .editor-header p { color: #a07070; font-style: italic; font-size: 0.88rem; }
+
+  .editor-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .tool-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(192,86,106,0.3);
+    background: white;
+    color: #8b2d42;
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tool-btn:hover { background: #8b2d42; color: white; border-color: #8b2d42; }
+  .tool-btn.danger { border-color: #c0566a; color: #c0566a; }
+  .tool-btn.danger:hover { background: #c0566a; color: white; }
+
+  .q-editor-list { display: flex; flex-direction: column; gap: 18px; }
+
+  .q-editor-item {
+    background: white;
+    border: 1.5px solid rgba(192,86,106,0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(139,45,66,0.04);
+  }
+
+  .q-editor-header {
+    background: rgba(192,86,106,0.07);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(192,86,106,0.1);
+    user-select: none;
+  }
+  .q-editor-header:hover { background: rgba(192,86,106,0.12); }
+  .q-editor-title { color: #8b2d42; font-size: 0.88rem; font-weight: bold; flex: 1; margin-right: 10px; }
+  .q-editor-toggle { color: #c0566a; font-size: 1.1rem; flex-shrink: 0; }
+  .q-editor-body { padding: 18px; display: none; }
+  .q-editor-body.open { display: block; }
+
+  .field-group { margin-bottom: 14px; }
+  .field-group label { display: block; font-size: 0.78rem; color: #a07070; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; font-style: normal; }
+  .field-group input[type="text"],
+  .field-group textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid rgba(192,86,106,0.2);
+    border-radius: 8px;
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    color: #3a1f1f;
+    background: #fdf6ee;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .field-group input[type="text"]:focus,
+  .field-group textarea:focus { outline: none; border-color: #c0566a; }
+
+  .options-editor { display: flex; flex-direction: column; gap: 8px; }
+  .option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .option-row label { font-size: 0.78rem; color: #a07070; width: 70px; flex-shrink: 0; }
+  .option-row input[type="text"] { flex: 1; }
+  .correct-radio { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .correct-radio input { accent-color: #5a9e6a; width: 15px; height: 15px; cursor: pointer; }
+  .correct-radio span { font-size: 0.72rem; color: #5a9e6a; }
+
+  .q-delete-btn {
+    margin-top: 12px;
+    padding: 6px 14px;
+    border: 1.5px solid #c0566a;
+    border-radius: 8px;
+    background: transparent;
+    color: #c0566a;
+    font-family: Georgia, serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .q-delete-btn:hover { background: #c0566a; color: white; }
+
+  .save-notice {
+    text-align: center;
+    margin-top: 20px;
+    padding: 14px;
+    background: rgba(80,160,100,0.1);
+    border: 1px solid #5a9e6a;
+    border-radius: 10px;
+    color: #2d6b3e;
+    font-style: italic;
+    font-size: 0.88rem;
+    display: none;
+  }
+  .save-notice.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAVIGATION -->
+<div class="top-nav">
+  <h2>🌹 Kviz o Zmajevim zbirkama</h2>
+  <div class="nav-btns">
+    <button class="nav-btn" onclick="switchView('quiz')">▶ Resi kviz</button>
+    <button class="nav-btn active" onclick="switchView('editor')">✎ Uredi pitanja</button>
+  </div>
+</div>
+
+<div class="wrapper">
+
+  <!-- ===== QUIZ VIEW ===== -->
+  <div class="view" id="view-quiz">
+    <header>
+      <div class="rose-divider">✦ ✦ ✦</div>
+      <h1>Djulici i Djulici uveoci</h1>
+      <p class="subtitle">Kviz posvecen zbirkama Jovana Jovanovica Zmaja</p>
+    </header>
+
+    <div id="quiz-area" style="display: block;">
+      <div class="progress-label" id="progress-label">Pitanje 1 od 12</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar" style="width: 0%;"></div>
+      </div>
+      <div class="card">
+        <div class="question-meta">
+          <span class="q-number" id="q-num">01 / 12</span>
+          <span class="category-tag" id="q-cat">Istorija</span>
+        </div>
+        <div class="question-text" id="q-text">Koju ste Zmajevu pesmu čitali u osnovnoj školi?</div>
+        <div class="options" id="options"><button class="option-btn"><span class="option-letter">A</span>Otadžbina</button><button class="option-btn"><span class="option-letter">B</span>Svetli grobovi</button><button class="option-btn"><span class="option-letter">C</span>Manasija</button><button class="option-btn"><span class="option-letter">D</span>Očiju tvojih da nije</button></div>
+        <div class="feedback" id="feedback"></div>
+        <button class="next-btn" id="next-btn">Sledece pitanje</button>
+      </div>
+    </div>
+
+    <div class="card" id="results">
+      <div class="rose-divider" style="margin-bottom:18px">✦ ✦ ✦</div>
+      <div class="grade-row">
+        <div class="score-circle">
+          <div class="score-num" id="score-num">0</div>
+          <div class="score-total" id="score-total">od 12</div>
+        </div>
+        <div class="grade-box g3" id="grade-box">
+          <div class="grade-num" id="grade-num">-</div>
+          <div class="grade-label">ocena</div>
+        </div>
+      </div>
+      <div class="grade-scale">
+        <div class="grade-scale-item"><div class="grade-scale-dot gs1" id="gs1">1</div><span>0-4</span></div>
+        <div class="grade-scale-item"><div class="grade-scale-dot gs2" id="gs2">2</div><span>5-6</span></div>
+        <div class="grade-scale-item"><div class="grade-scale-dot gs3" id="gs3">3</div><span>7-8</span></div>
+        <div class="grade-scale-item"><div class="grade-scale-dot gs4" id="gs4">4</div><span>9</span></div>
+        <div class="grade-scale-item"><div class="grade-scale-dot gs5" id="gs5">5</div><span>10-12</span></div>
+      </div>
+      <div class="result-title" id="result-title"></div>
+      <div class="poem-quote" id="poem-quote"></div>
+      <div class="result-msg" id="result-msg"></div>
+      <button class="restart-btn" onclick="restart()">🌹 Ponovi kviz</button>
+    </div>
+  </div>
+
+  <!-- ===== EDITOR VIEW ===== -->
+  <div class="view active" id="view-editor">
+    <div class="editor-header">
+      <h2>✎ Urednik pitanja</h2>
+      <p>Klikni na pitanje da ga razvines i izmenis. Izmene se odmah primenjuju u kvizu.</p>
+    </div>
+
+    <div class="editor-toolbar">
+      <button class="tool-btn" onclick="addQuestion()">+ Dodaj novo pitanje</button>
+      <button class="tool-btn" onclick="saveChanges()">✓ Sacuvaj izmene</button>
+      <button class="download-btn" onclick="downloadQuiz()">⇩ Preuzmi kviz</button>
+    </div>
+
+    <div class="q-editor-list" id="q-editor-list"><div class="q-editor-item" id="qitem-0"><div class="q-editor-header" onclick="toggleEditor(0)"><span class="q-editor-title">1. Koju ste Zmajevu pesmu čitali u osnovnoj školi?</span><span class="q-editor-toggle" id="toggle-0">▼</span></div><div class="q-editor-body" id="qbody-0"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-0" rows="2">Koju ste Zmajevu pesmu čitali u osnovnoj školi?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-0" value="Istorija"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-0-0" value="Otadžbina"><div class="correct-radio"><input type="radio" name="correct-0" id="radio-0-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-0-1" value="Svetli grobovi"><div class="correct-radio"><input type="radio" name="correct-0" id="radio-0-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-0-2" value="Manasija"><div class="correct-radio"><input type="radio" name="correct-0" id="radio-0-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-0-3" value="Očiju tvojih da nije"><div class="correct-radio"><input type="radio" name="correct-0" id="radio-0-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-0" rows="2">Svetli grobovi</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(0)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-1"><div class="q-editor-header" onclick="toggleEditor(1)"><span class="q-editor-title">2. Kome su Đulici posveceni?</span><span class="q-editor-toggle" id="toggle-1">▼</span></div><div class="q-editor-body" id="qbody-1"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-1" rows="2">Kome su Đulici posveceni?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-1" value="Posveta"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-1-0" value="Majci pesnika"><div class="correct-radio"><input type="radio" name="correct-1" id="radio-1-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-1-1" value="Ćerki pesnika"><div class="correct-radio"><input type="radio" name="correct-1" id="radio-1-1" value="1"><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-1-2" value="Zmajevoj supruzi Ruži"><div class="correct-radio"><input type="radio" name="correct-1" id="radio-1-2" value="2" checked=""><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-1-3" value="Prijatelju Branku Radicevicu"><div class="correct-radio"><input type="radio" name="correct-1" id="radio-1-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-1" rows="2">Djulici su posveceni Zmajevoj voljenoj supruzi, koja je bila njegova muza i inspiracija.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(1)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-2"><div class="q-editor-header" onclick="toggleEditor(2)"><span class="q-editor-title">3. Šta 'đul' znaci u prevodu?</span><span class="q-editor-toggle" id="toggle-2">▼</span></div><div class="q-editor-body" id="qbody-2"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-2" rows="2">Šta 'đul' znaci u prevodu?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-2" value="Znacenje"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-2-0" value="Leptir"><div class="correct-radio"><input type="radio" name="correct-2" id="radio-2-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-2-1" value="Ruzica (mali cvet ruze)"><div class="correct-radio"><input type="radio" name="correct-2" id="radio-2-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-2-2" value="Suza"><div class="correct-radio"><input type="radio" name="correct-2" id="radio-2-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-2-3" value="Mesecina"><div class="correct-radio"><input type="radio" name="correct-2" id="radio-2-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-2" rows="2">Djulic je turcizam koji znaci ruzica. Zmaj je ovaj naziv odabrao jer je ruza simbol ljubavi i lepote.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(2)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-3"><div class="q-editor-header" onclick="toggleEditor(3)"><span class="q-editor-title">4. Šta je bio povod za nastanak zbirke Đulici uveoci?</span><span class="q-editor-toggle" id="toggle-3">▼</span></div><div class="q-editor-body" id="qbody-3"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-3" rows="2">Šta je bio povod za nastanak zbirke Đulici uveoci?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-3" value="Biografija"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-3-0" value="Zmajeva bolest"><div class="correct-radio"><input type="radio" name="correct-3" id="radio-3-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-3-1" value="Smrt supruge i dece"><div class="correct-radio"><input type="radio" name="correct-3" id="radio-3-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-3-2" value="Odlazak u emigraciju"><div class="correct-radio"><input type="radio" name="correct-3" id="radio-3-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-3-3" value="Gubitak prijatelja"><div class="correct-radio"><input type="radio" name="correct-3" id="radio-3-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-3" rows="2">Djulici uveoci nastali su kao tugovanke nakon sto je Zmaj izgubio suprugu, a potom i svu svoju decu.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(3)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-4"><div class="q-editor-header" onclick="toggleEditor(4)"><span class="q-editor-title">5. Koji je dominantan osecaj koji prožima Đulice?</span><span class="q-editor-toggle" id="toggle-4">▼</span></div><div class="q-editor-body" id="qbody-4"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-4" rows="2">Koji je dominantan osecaj koji prožima Đulice?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-4" value="Tematika"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-4-0" value="Tuga i zalost"><div class="correct-radio"><input type="radio" name="correct-4" id="radio-4-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-4-1" value="Ljubav, sreca i neznost"><div class="correct-radio"><input type="radio" name="correct-4" id="radio-4-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-4-2" value="Rodoljublje i bunt"><div class="correct-radio"><input type="radio" name="correct-4" id="radio-4-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-4-3" value="Strah i melanholija"><div class="correct-radio"><input type="radio" name="correct-4" id="radio-4-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-4" rows="2">Đulici su prozeti toplinom ljubavi, neznoscu prema supruzi i srecom porodicnog zivota.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(4)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-5"><div class="q-editor-header" onclick="toggleEditor(5)"><span class="q-editor-title">6. Koje teme dominiraju u Đulicima uveocima?</span><span class="q-editor-toggle" id="toggle-5">▼</span></div><div class="q-editor-body" id="qbody-5"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-5" rows="2">Koje teme dominiraju u Đulicima uveocima?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-5" value="Tematika"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-5-0" value="Ljubav i vencanje"><div class="correct-radio"><input type="radio" name="correct-5" id="radio-5-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-5-1" value="Smrt, tuga i zalovanje"><div class="correct-radio"><input type="radio" name="correct-5" id="radio-5-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-5-2" value="Priroda i prolece"><div class="correct-radio"><input type="radio" name="correct-5" id="radio-5-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-5-3" value="Politicka satira"><div class="correct-radio"><input type="radio" name="correct-5" id="radio-5-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-5" rows="2">Djulici uveoci bave se smrcu, gubitkom i tugom. Uveli su duboko elegican ton u srpsku liriku.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(5)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-6"><div class="q-editor-header" onclick="toggleEditor(6)"><span class="q-editor-title">7. Šta simbolisu uveoci u naslovu druge zbirke?</span><span class="q-editor-toggle" id="toggle-6">▼</span></div><div class="q-editor-body" id="qbody-6"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-6" rows="2">Šta simbolisu uveoci u naslovu druge zbirke?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-6" value="Simbolika"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-6-0" value="Mladi pupoljci"><div class="correct-radio"><input type="radio" name="correct-6" id="radio-6-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-6-1" value="Uvele, osusene ruze — simbol tuge"><div class="correct-radio"><input type="radio" name="correct-6" id="radio-6-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-6-2" value="Divlje ruze"><div class="correct-radio"><input type="radio" name="correct-6" id="radio-6-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-6-3" value="Novogodisnji ukrasi"><div class="correct-radio"><input type="radio" name="correct-6" id="radio-6-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-6" rows="2">Uveoci su uvele ruze — suprotnost svezim djulicima. Naslov govori o prolasku srece i gubitku bliskih.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(6)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-7"><div class="q-editor-header" onclick="toggleEditor(7)"><span class="q-editor-title">8. Koji časopis je Zmaj osnovao i uređivao?</span><span class="q-editor-toggle" id="toggle-7">▼</span></div><div class="q-editor-body" id="qbody-7"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-7" rows="2">Koji časopis je Zmaj osnovao i uređivao?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-7" value="Biografija"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-7-0" value="NIN"><div class="correct-radio"><input type="radio" name="correct-7" id="radio-7-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-7-1" value="Neven"><div class="correct-radio"><input type="radio" name="correct-7" id="radio-7-1" value="1" checked=""><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-7-2" value="Vreme"><div class="correct-radio"><input type="radio" name="correct-7" id="radio-7-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-7-3" value="Politika"><div class="correct-radio"><input type="radio" name="correct-7" id="radio-7-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-7" rows="2">Neven</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(7)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-8"><div class="q-editor-header" onclick="toggleEditor(8)"><span class="q-editor-title">9. Kojoj vrsti pripadaju pesme iz zbirke Đulići uveoci?</span><span class="q-editor-toggle" id="toggle-8">▼</span></div><div class="q-editor-body" id="qbody-8"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-8" rows="2">Kojoj vrsti pripadaju pesme iz zbirke Đulići uveoci?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-8" value="Struktura"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-8-0" value="rodoljubive"><div class="correct-radio"><input type="radio" name="correct-8" id="radio-8-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-8-1" value="ljubavne "><div class="correct-radio"><input type="radio" name="correct-8" id="radio-8-1" value="1"><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-8-2" value="elegije"><div class="correct-radio"><input type="radio" name="correct-8" id="radio-8-2" value="2" checked=""><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-8-3" value="misaone"><div class="correct-radio"><input type="radio" name="correct-8" id="radio-8-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-8" rows="2">elegije</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(8)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-9"><div class="q-editor-header" onclick="toggleEditor(9)"><span class="q-editor-title">10. Kojoj knjizevnoj epohi pripada Zmajevo stvaralastvo?</span><span class="q-editor-toggle" id="toggle-9">▼</span></div><div class="q-editor-body" id="qbody-9"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-9" rows="2">Kojoj knjizevnoj epohi pripada Zmajevo stvaralastvo?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-9" value="Knjizevnost"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-9-0" value="Romantizmu"><div class="correct-radio"><input type="radio" name="correct-9" id="radio-9-0" value="0" checked=""><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-9-1" value="Realizmu"><div class="correct-radio"><input type="radio" name="correct-9" id="radio-9-1" value="1"><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-9-2" value="Baroku"><div class="correct-radio"><input type="radio" name="correct-9" id="radio-9-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-9-3" value="Prosvećenosti"><div class="correct-radio"><input type="radio" name="correct-9" id="radio-9-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-9" rows="2">Zmaj je jedan od trojice velikih srpskih romanticara, uz Branka Radicevica i Djuru Jaksica.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(9)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-10"><div class="q-editor-header" onclick="toggleEditor(10)"><span class="q-editor-title">11. Koje od sledeckih dela NIJE Zmajevo?</span><span class="q-editor-toggle" id="toggle-10">▼</span></div><div class="q-editor-body" id="qbody-10"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-10" rows="2">Koje od sledeckih dela NIJE Zmajevo?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-10" value="Bibliografija"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-10-0" value="Pevanija"><div class="correct-radio"><input type="radio" name="correct-10" id="radio-10-0" value="0"><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-10-1" value="Djulici"><div class="correct-radio"><input type="radio" name="correct-10" id="radio-10-1" value="1"><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-10-2" value="Gorski vijenac"><div class="correct-radio"><input type="radio" name="correct-10" id="radio-10-2" value="2" checked=""><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-10-3" value="Djulici uveoci"><div class="correct-radio"><input type="radio" name="correct-10" id="radio-10-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-10" rows="2">Gorski vijenac je remek-delo Petra II Petrovica Njegosa. Zmajeva dela su Djulici, Djulici uveoci, Pevanija i dr.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(10)">✕ Obrisi ovo pitanje</button></div></div><div class="q-editor-item" id="qitem-11"><div class="q-editor-header" onclick="toggleEditor(11)"><span class="q-editor-title">12. Na kog renesansnog pesnika se Zmaj ugledao?</span><span class="q-editor-toggle" id="toggle-11">▼</span></div><div class="q-editor-body" id="qbody-11"><div class="field-group"><label>Pitanje</label><textarea id="qtxt-11" rows="2">Na kog renesansnog pesnika se Zmaj ugledao?</textarea></div><div class="field-group"><label>Kategorija</label><input type="text" id="qcat-11" value="Opste"></div><div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor"><div class="option-row"><label>A opcija</label><input type="text" id="opt-11-0" value="Petrarku"><div class="correct-radio"><input type="radio" name="correct-11" id="radio-11-0" value="0" checked=""><span>Tacno</span></div></div><div class="option-row"><label>B opcija</label><input type="text" id="opt-11-1" value="Aligijerija"><div class="correct-radio"><input type="radio" name="correct-11" id="radio-11-1" value="1"><span>Tacno</span></div></div><div class="option-row"><label>C opcija</label><input type="text" id="opt-11-2" value="Bokača"><div class="correct-radio"><input type="radio" name="correct-11" id="radio-11-2" value="2"><span>Tacno</span></div></div><div class="option-row"><label>D opcija</label><input type="text" id="opt-11-3" value="Šekspira"><div class="correct-radio"><input type="radio" name="correct-11" id="radio-11-3" value="3"><span>Tacno</span></div></div></div></div><div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-11" rows="2">Objasnjenje tacnog odgovora.</textarea></div><button class="q-delete-btn" onclick="deleteQuestion(11)">✕ Obrisi ovo pitanje</button></div></div></div>
+    <div class="save-notice show" id="save-notice">Izmene su sacuvane! Mozete da idete na kviz.</div>
+  </div>
+
+</div>
+
+<script>
+// ===== DATA =====
+var questions = [
+  {
+    "text": "Koju ste Zmajevu pesmu čitali u osnovnoj školi?",
+    "options": [
+      "Otadžbina",
+      "Svetli grobovi",
+      "Manasija",
+      "Očiju tvojih da nije"
+    ],
+    "answer": 1,
+    "category": "Istorija",
+    "feedback": "Svetli grobovi"
+  },
+  {
+    "text": "Kome su Đulici posveceni?",
+    "options": [
+      "Majci pesnika",
+      "Ćerki pesnika",
+      "Zmajevoj supruzi Ruži",
+      "Prijatelju Branku Radicevicu"
+    ],
+    "answer": 2,
+    "category": "Posveta",
+    "feedback": "Djulici su posveceni Zmajevoj voljenoj supruzi, koja je bila njegova muza i inspiracija."
+  },
+  {
+    "text": "Šta 'đul' znaci u prevodu?",
+    "options": [
+      "Leptir",
+      "Ruzica (mali cvet ruze)",
+      "Suza",
+      "Mesecina"
+    ],
+    "answer": 1,
+    "category": "Znacenje",
+    "feedback": "Djulic je turcizam koji znaci ruzica. Zmaj je ovaj naziv odabrao jer je ruza simbol ljubavi i lepote."
+  },
+  {
+    "text": "Šta je bio povod za nastanak zbirke Đulici uveoci?",
+    "options": [
+      "Zmajeva bolest",
+      "Smrt supruge i dece",
+      "Odlazak u emigraciju",
+      "Gubitak prijatelja"
+    ],
+    "answer": 1,
+    "category": "Biografija",
+    "feedback": "Djulici uveoci nastali su kao tugovanke nakon sto je Zmaj izgubio suprugu, a potom i svu svoju decu."
+  },
+  {
+    "text": "Koji je dominantan osecaj koji prožima Đulice?",
+    "options": [
+      "Tuga i zalost",
+      "Ljubav, sreca i neznost",
+      "Rodoljublje i bunt",
+      "Strah i melanholija"
+    ],
+    "answer": 1,
+    "category": "Tematika",
+    "feedback": "Đulici su prozeti toplinom ljubavi, neznoscu prema supruzi i srecom porodicnog zivota."
+  },
+  {
+    "text": "Koje teme dominiraju u Đulicima uveocima?",
+    "options": [
+      "Ljubav i vencanje",
+      "Smrt, tuga i zalovanje",
+      "Priroda i prolece",
+      "Politicka satira"
+    ],
+    "answer": 1,
+    "category": "Tematika",
+    "feedback": "Djulici uveoci bave se smrcu, gubitkom i tugom. Uveli su duboko elegican ton u srpsku liriku."
+  },
+  {
+    "text": "Šta simbolisu uveoci u naslovu druge zbirke?",
+    "options": [
+      "Mladi pupoljci",
+      "Uvele, osusene ruze — simbol tuge",
+      "Divlje ruze",
+      "Novogodisnji ukrasi"
+    ],
+    "answer": 1,
+    "category": "Simbolika",
+    "feedback": "Uveoci su uvele ruze — suprotnost svezim djulicima. Naslov govori o prolasku srece i gubitku bliskih."
+  },
+  {
+    "text": "Koji časopis je Zmaj osnovao i uređivao?",
+    "options": [
+      "NIN",
+      "Neven",
+      "Vreme",
+      "Politika"
+    ],
+    "answer": 1,
+    "category": "Biografija",
+    "feedback": "Neven"
+  },
+  {
+    "text": "Kojoj vrsti pripadaju pesme iz zbirke Đulići uveoci?",
+    "options": [
+      "rodoljubive",
+      "ljubavne ",
+      "elegije",
+      "misaone"
+    ],
+    "answer": 2,
+    "category": "Struktura",
+    "feedback": "elegije"
+  },
+  {
+    "text": "Kojoj knjizevnoj epohi pripada Zmajevo stvaralastvo?",
+    "options": [
+      "Romantizmu",
+      "Realizmu",
+      "Baroku",
+      "Prosvećenosti"
+    ],
+    "answer": 0,
+    "category": "Knjizevnost",
+    "feedback": "Zmaj je jedan od trojice velikih srpskih romanticara, uz Branka Radicevica i Djuru Jaksica."
+  },
+  {
+    "text": "Koje od sledeckih dela NIJE Zmajevo?",
+    "options": [
+      "Pevanija",
+      "Djulici",
+      "Gorski vijenac",
+      "Djulici uveoci"
+    ],
+    "answer": 2,
+    "category": "Bibliografija",
+    "feedback": "Gorski vijenac je remek-delo Petra II Petrovica Njegosa. Zmajeva dela su Djulici, Djulici uveoci, Pevanija i dr."
+  },
+  {
+    "text": "Na kog renesansnog pesnika se Zmaj ugledao?",
+    "options": [
+      "Petrarku",
+      "Aligijerija",
+      "Bokača",
+      "Šekspira"
+    ],
+    "answer": 0,
+    "category": "Opste",
+    "feedback": "Objasnjenje tacnog odgovora."
+  }
+];
+
+// ===== VIEW SWITCHING =====
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('view-' + v).classList.add('active');
+  var btns = document.querySelectorAll('.nav-btn');
+  if (v === 'quiz') btns[0].classList.add('active');
+  else btns[1].classList.add('active');
+  if (v === 'editor') renderEditor();
+}
+
+// ===== QUIZ LOGIC =====
+var current = 0, score = 0, answered = false;
+
+function loadQuestion() {
+  answered = false;
+  var q = questions[current];
+  var total = questions.length;
+  document.getElementById('q-num').textContent = (current+1 < 10 ? '0' : '') + (current+1) + ' / ' + total;
+  document.getElementById('q-cat').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('progress-label').textContent = 'Pitanje ' + (current+1) + ' od ' + total;
+  document.getElementById('progress-bar').style.width = ((current / total) * 100) + '%';
+
+  var opts = document.getElementById('options');
+  opts.innerHTML = '';
+  var letters = ['A','B','C','D'];
+  for (var i = 0; i < q.options.length; i++) {
+    (function(idx) {
+      var btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = '<span class="option-letter">' + letters[idx] + '</span>' + q.options[idx];
+      btn.onclick = function() { selectAnswer(idx); };
+      opts.appendChild(btn);
+    })(i);
+  }
+  var fb = document.getElementById('feedback');
+  fb.className = 'feedback'; fb.textContent = '';
+  var nb = document.getElementById('next-btn');
+  nb.className = 'next-btn';
+  nb.textContent = current === questions.length - 1 ? 'Pogledaj rezultate' : 'Sledece pitanje';
+}
+
+function selectAnswer(chosen) {
+  if (answered) return;
+  answered = true;
+  var q = questions[current];
+  var btns = document.querySelectorAll('.option-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+  var fb = document.getElementById('feedback');
+  if (chosen === q.answer) {
+    btns[chosen].classList.add('correct');
+    fb.className = 'feedback correct-fb show';
+    fb.textContent = 'Tacno! ' + q.feedback;
+    score++;
+  } else {
+    btns[chosen].classList.add('wrong');
+    btns[q.answer].classList.add('correct');
+    fb.className = 'feedback wrong-fb show';
+    fb.textContent = 'Netacno. Tacan odgovor: ' + q.options[q.answer] + '. ' + q.feedback;
+  }
+  document.getElementById('next-btn').className = 'next-btn show';
+}
+
+document.getElementById('next-btn').onclick = function() {
+  current++;
+  if (current >= questions.length) showResults();
+  else loadQuestion();
+};
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  var r = document.getElementById('results');
+  r.className = 'card show';
+  var total = questions.length;
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-total').textContent = 'od ' + total;
+  var pct = score / total;
+
+  var grade;
+  if (pct >= 0.85) grade = 5;
+  else if (pct >= 0.70) grade = 4;
+  else if (pct >= 0.55) grade = 3;
+  else if (pct >= 0.40) grade = 2;
+  else grade = 1;
+
+  var gradeBox = document.getElementById('grade-box');
+  gradeBox.className = 'grade-box g' + grade;
+  document.getElementById('grade-num').textContent = grade;
+
+  for (var g = 1; g <= 5; g++) {
+    var dot = document.getElementById('gs' + g);
+    if (dot) dot.className = 'grade-scale-dot gs' + g + (g === grade ? ' active' : '');
+  }
+
+  var title, msg, quote;
+  if (grade === 5) { title = 'Ocena 5 — Odlican!'; msg = 'Izvrsno! Potpuno savladano gradivo. Zmaj bi bio ponosan!'; quote = 'Cvet je svezo cvao, rosa / Kapljala mu s lista... — Zmaj'; }
+  else if (grade === 4) { title = 'Ocena 4 — Vrlodobar!'; msg = 'Veoma solidno znanje. Jos malo paznje i bila bi savrsena!'; quote = 'Ti si bila, ti si bila / Najlepsa od svega sto je bilo... — Zmaj'; }
+  else if (grade === 3) { title = 'Ocena 3 — Dobar!'; msg = 'Znas osnove, ali ima prostora za napredak. Preporucujemo jos jedno citanje.'; quote = 'Djulic, djulic, mali cvet... — Zmaj'; }
+  else if (grade === 2) { title = 'Ocena 2 — Dovoljan!'; msg = 'Prosao/la si, ali jedva. Vrati se zbirkama i pokusaj ponovo!'; quote = 'Cvet je venut, list je spao... — Zmaj'; }
+  else { title = 'Ocena 1 — Nedovoljan!'; msg = 'Nije proslo ovog puta. Procitaj zbirke i ponovi kviz!'; quote = 'I zora ce proci, / I noc ce doci... — Zmaj'; }
+
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('poem-quote').textContent = quote;
+}
+
+function downloadQuiz() {
+  // First save any pending changes
+  saveChanges();
+
+  // Build updated questions JSON
+  var qJson = JSON.stringify(questions, null, 2);
+
+  // Get current HTML and replace the questions array
+  var html = document.documentElement.outerHTML;
+  html = html.replace(/var questions = \[[\s\S]*?\];/, 'var questions = ' + qJson + ';');
+
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zmaj-kviz.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function restart() {
+  current = 0; score = 0;
+  document.getElementById('quiz-area').style.display = 'block';
+  document.getElementById('results').className = 'card';
+  loadQuestion();
+}
+
+// ===== EDITOR LOGIC =====
+function renderEditor() {
+  var list = document.getElementById('q-editor-list');
+  list.innerHTML = '';
+  document.getElementById('save-notice').className = 'save-notice';
+
+  for (var i = 0; i < questions.length; i++) {
+    (function(idx) {
+      var q = questions[idx];
+      var item = document.createElement('div');
+      item.className = 'q-editor-item';
+      item.id = 'qitem-' + idx;
+
+      var preview = q.text.length > 60 ? q.text.substring(0, 60) + '...' : q.text;
+
+      var optionsHtml = '';
+      var letters = ['A','B','C','D'];
+      for (var j = 0; j < 4; j++) {
+        var val = q.options[j] || '';
+        optionsHtml += '<div class="option-row">' +
+          '<label>' + letters[j] + ' opcija</label>' +
+          '<input type="text" id="opt-' + idx + '-' + j + '" value="' + val.replace(/"/g,'&quot;') + '">' +
+          '<div class="correct-radio"><input type="radio" name="correct-' + idx + '" id="radio-' + idx + '-' + j + '" value="' + j + '"' + (q.answer === j ? ' checked' : '') + '><span>Tacno</span></div>' +
+          '</div>';
+      }
+
+      item.innerHTML =
+        '<div class="q-editor-header" onclick="toggleEditor(' + idx + ')">' +
+          '<span class="q-editor-title">' + (idx+1) + '. ' + preview + '</span>' +
+          '<span class="q-editor-toggle" id="toggle-' + idx + '">&#9660;</span>' +
+        '</div>' +
+        '<div class="q-editor-body" id="qbody-' + idx + '">' +
+          '<div class="field-group"><label>Pitanje</label><textarea id="qtxt-' + idx + '" rows="2">' + q.text + '</textarea></div>' +
+          '<div class="field-group"><label>Kategorija</label><input type="text" id="qcat-' + idx + '" value="' + (q.category || '') + '"></div>' +
+          '<div class="field-group"><label>Odgovori (oznaci tacan)</label><div class="options-editor">' + optionsHtml + '</div></div>' +
+          '<div class="field-group"><label>Objasnjenje (posle odgovora)</label><textarea id="qfb-' + idx + '" rows="2">' + q.feedback + '</textarea></div>' +
+          '<button class="q-delete-btn" onclick="deleteQuestion(' + idx + ')">&#10005; Obrisi ovo pitanje</button>' +
+        '</div>';
+
+      list.appendChild(item);
+    })(i);
+  }
+}
+
+function toggleEditor(idx) {
+  var body = document.getElementById('qbody-' + idx);
+  var toggle = document.getElementById('toggle-' + idx);
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    toggle.innerHTML = '&#9660;';
+  } else {
+    body.classList.add('open');
+    toggle.innerHTML = '&#9650;';
+  }
+}
+
+function saveChanges() {
+  for (var i = 0; i < questions.length; i++) {
+    var txtEl = document.getElementById('qtxt-' + i);
+    var catEl = document.getElementById('qcat-' + i);
+    var fbEl = document.getElementById('qfb-' + i);
+    if (!txtEl) continue;
+
+    questions[i].text = txtEl.value;
+    questions[i].category = catEl ? catEl.value : questions[i].category;
+    questions[i].feedback = fbEl ? fbEl.value : questions[i].feedback;
+
+    var opts = [];
+    for (var j = 0; j < 4; j++) {
+      var el = document.getElementById('opt-' + i + '-' + j);
+      opts.push(el ? el.value : '');
+    }
+    questions[i].options = opts;
+
+    for (var j = 0; j < 4; j++) {
+      var r = document.getElementById('radio-' + i + '-' + j);
+      if (r && r.checked) { questions[i].answer = j; break; }
+    }
+  }
+
+  // Re-render editor to update previews
+  renderEditor();
+  // Reset quiz
+  current = 0; score = 0;
+  document.getElementById('quiz-area').style.display = 'block';
+  document.getElementById('results').className = 'card';
+  loadQuestion();
+
+  document.getElementById('save-notice').className = 'save-notice show';
+  setTimeout(function() {
+    document.getElementById('save-notice').className = 'save-notice';
+  }, 3000);
+}
+
+function addQuestion() {
+  questions.push({
+    text: "Novo pitanje...",
+    options: ["Opcija A", "Opcija B", "Opcija C", "Opcija D"],
+    answer: 0,
+    category: "Opste",
+    feedback: "Objasnjenje tacnog odgovora."
+  });
+  renderEditor();
+  // Auto-open the new question
+  var newIdx = questions.length - 1;
+  toggleEditor(newIdx);
+  // Scroll to it
+  setTimeout(function() {
+    var el = document.getElementById('qitem-' + newIdx);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function deleteQuestion(idx) {
+  if (questions.length <= 1) { alert("Ne mozes obrisati sve — ostavi bar jedno pitanje!"); return; }
+  questions.splice(idx, 1);
+  renderEditor();
+}
+
+// ===== INIT =====
+loadQuestion();
+</script>
+
+
+</body></html>
